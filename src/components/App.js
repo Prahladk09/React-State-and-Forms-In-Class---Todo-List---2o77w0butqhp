@@ -1,107 +1,144 @@
-import React from "react";
-import "../styles/App.css";
+mport React, { useState } from "react";
+import "./../styles/App.css";
 
-const App = () => {
-  const [todos, setTodos] = React.useState([]);
-  const [todo, setTodo] = React.useState("");
-  const [todoEditing, setTodoEditing] = React.useState(null);
-  const [editingText, setEditingText] = React.useState("");
-
-  React.useEffect(() => {
-    const json = localStorage.getItem("todos");
-    const loadedTodos = JSON.parse(json);
-    if (loadedTodos) {
-      setTodos(loadedTodos);
+function App() {
+  let [inputValue, setInputValue] = useState("");
+  let [toDoList, setList] = useState([]);
+  let [showList, setShowList] = useState(false);
+  const handleChange = (e) => {
+    setInputValue(e.target.value);
+  };
+  const addToList = () => {
+    if (inputValue === "") {
+      return;
     }
-  }, []);
-
-  React.useEffect(() => {
-    const json = JSON.stringify(todos);
-    localStorage.setItem("todos", json);
-  }, [todos]);
-
-  function handleSubmit(e) {
-    e.preventDefault();
-	if(todo == "") {
-		return;
-	}
-    const newTodo = {
-      id: new Date().getTime(),
-      text: todo,
-      completed: false,
+    const newItem = {
+      id: toDoList.length + Math.random(),
+      value: inputValue,
+      editable: false,
+      updatedValue: "",
     };
-	setTodos([...todos].concat(newTodo));
-    setTodo("");
-  }
+    // copy list
+    const copiedList = [...toDoList];
 
-  function deleteTodo(id) {
-    let updatedTodos = [...todos].filter((todo) => todo.id !== id);
-    setTodos(updatedTodos);
-  }
+    // store new value
+    copiedList.push(newItem);
 
-  function toggleComplete(id) {
-    let updatedTodos = [...todos].map((todo) => {
-      if (todo.id === id) {
-        todo.completed = !todo.completed;
+    // set list
+    setList(copiedList);
+    setInputValue("");
+    setShowList(true);
+  };
+  const deleteItem = (id) => {
+    let tempList = [...toDoList];
+    tempList = tempList.filter((item) => item.id != id);
+    setList(tempList);
+    if (tempList.length === 0) {
+      setShowList(false);
+    }
+  };
+  const editItem = (id) => {
+    let copy = [...toDoList];
+    copy = copy.map((item) => {
+      if (item.id != id) {
+        return item;
       }
-      return todo;
+      item.editable = true;
+      return item;
     });
-    setTodos(updatedTodos);
-  }
-
-  function submitEdits(id) {
-    const updatedTodos = [...todos].map((todo) => {
-      if (todo.id === id) {
-        todo.text = editingText;
+    setList(copy);
+  };
+  const handleEditChange = (e, id) => {
+    let copy = [...toDoList];
+    copy = copy.map((item) => {
+      if (item.id != id) {
+        return item;
       }
-      return todo;
+      item.updatedValue = e.target.value;
+      return item;
     });
-    setTodos(updatedTodos);
-    setTodoEditing(null);
-  }
-
+    setList(copy);
+  };
+  const update = (id, value) => {
+    if (value === "") {
+      return;
+    }
+    let updatedItem = {
+      id: id,
+      value: value,
+      editable: false,
+      updatedValue: "",
+    };
+    let copy = [...toDoList];
+    copy = copy.map((item) => {
+      if (item.id != id) {
+        return item;
+      }
+      return updatedItem;
+    });
+    setList(copy);
+  };
   return (
-    <div id="todo-list">
-      <h1>Todo List</h1>
-      <form onSubmit={handleSubmit}>
-        <input
-          type="text"
-          onChange={(e) => setTodo(e.target.value)}
-          value={todo}
-        />
-        <button type="submit" id='task'>Add</button>
-      </form>
-      {todos.map((todo) => (
-        <div key={todo.id} className="todo">
-          <div className="todo-text">
-            <input
-              type="checkbox"
-              id="completed"
-              checked={todo.completed}
-              onChange={() => toggleComplete(todo.id)}
-            />
-            {todo.id === todoEditing ? (
-              <input
-                type="text"
-                onChange={(e) => setEditingText(e.target.value)}
-              />
-            ) : (
-              <div>{todo.text}</div>
-            )}
-          </div>
-          <div className="todo-actions">
-            {todo.id === todoEditing ? (
-              <button onClick={() => submitEdits(todo.id)}>Submit Edits</button>
-            ) : (
-              <button onClick={() => setTodoEditing(todo.id)}>Edit</button>
-            )}
-
-            <button onClick={() => deleteTodo(todo.id)}>Delete</button>
-          </div>
-        </div>
-      ))}
+    <div id="main">
+      {/* //Do not alter main div
+	//Please do not alter the functional component as tests depend on the type of component. */}
+      <h1>To Do App</h1>
+      <textarea id="task" value={inputValue} onChange={handleChange} />
+      <button id="btn" onClick={addToList}>
+        Add to List
+      </button>
+      <div>
+        <ul>
+          {showList &&
+            toDoList.map((item) => {
+              return (
+                <li className="list" key={item.id}>
+                  {item.editable ? (
+                    <>
+                      <textarea
+                        className="editTask"
+                        value={item.updatedValue}
+                        onChange={(e) => {
+                          handleEditChange(e, item.id);
+                        }}
+                      />
+                      <button
+                        className="saveTask"
+                        onClick={() => {
+                          update(item.id, item.updatedValue);
+                        }}
+                      >
+                        save
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      {item.value}
+                      <button
+                        className="edit"
+                        onClick={() => {
+                          editItem(item.id);
+                        }}
+                      >
+                        edit
+                      </button>
+                      <button
+                        className="delete"
+                        onClick={() => {
+                          deleteItem(item.id);
+                        }}
+                      >
+                        delete
+                      </button>
+                    </>
+                  )}
+                </li>
+              );
+            })}
+        </ul>
+      </div>
     </div>
   );
-};
+}
 
 export default App;
